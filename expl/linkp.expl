@@ -1,0 +1,62 @@
+type
+Node
+{int data;
+ Node next;
+}
+endtype
+
+decl
+Node head;
+enddecl
+
+int main()
+{decl
+  
+  int n,t,ret,temp;
+  Node l,p;
+ enddecl
+begin
+
+
+ t=initialize();
+
+ head=null;
+ n=1;
+ while(n<=100) do
+  
+   p=alloc();
+   p.data=n;
+   p.next=null;
+   if (head==null) then
+    head=p;
+    l=p;
+   else
+    l.next=p;
+    l=p;
+   endif;
+   n=n+1;
+ endwhile;
+
+ ret=exposcall("Fork");
+   l=head;
+  if (ret==0) then
+    while(l!=null) do
+    temp=exposcall("Write",-2,l.data);
+    l=l.next;
+    if(l!=null) then
+    l=l.next;
+    endif;
+    endwhile;
+  else
+   l=head.next;
+   while(l!=null) do
+    temp=exposcall("Write",-2,l.data);
+    l=l.next;
+    if(l!=null) then
+    l=l.next;
+    endif;
+    endwhile;
+  endif; 
+ return 0;
+ end
+}

@@ -1,0 +1,136 @@
+
+
+alias usersp R0;
+usersp=SP;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13]=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512-1;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=9;
+
+alias arg R1;
+arg=[[PTBR+2*(usersp-2)/512]*512+(usersp-2)%512]; 
+
+
+
+alias i R2;
+i=0;
+while(i<=60)
+do
+ if([INODE_TABLE+i*16+1]==arg)// && [INODE_TABLE+i*16]==EXEC)
+  then 
+break;
+ 
+ else
+ 
+  i=i+1;
+ endif;
+endwhile;
+ 
+if(i>60) 
+ then
+  [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=-1;
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+  SP=usersp;
+  
+  ireturn;
+ endif;
+
+
+
+ multipush(R0,R1,R2);
+ R1=3;
+ R2=[SYSTEM_STATUS_TABLE+1];
+
+ call MOD_1;   //exit process
+
+ multipop(R0,R1,R2);
+
+ alias uapg R3;
+ alias pid R4;
+ pid=[SYSTEM_STATUS_TABLE+1];
+ uapg=[PROCESS_TABLE+pid*16+11];
+ [MEMORY_FREE_LIST+uapg]=[MEMORY_FREE_LIST+uapg]+1;
+ [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1; //mem free count
+ SP=uapg*512-1;
+ [PROCESS_TABLE+pid*16+4]=RUNNING;
+ [PROCESS_TABLE+pid*16+7]=i;
+ 
+ R5=0;
+ while(R5<15) do
+ [uapg*512+512-16+R5]=-1;
+ R5=R5+2;
+endwhile;
+
+
+ 
+ PTBR=PAGE_TABLE_BASE+pid*20;
+ [PTBR]=63;
+ [PTBR+1]="0100";
+ [PTBR+2]=64; 
+ [PTBR+3]="0100";
+
+ [PTBR+4]=-1;
+ [PTBR+5]="0000";
+
+
+ [PTBR+6]=-1;
+ [PTBR+7]="0000";
+ 
+ 
+ multipush(R0,R1,R2,R3,R4);
+ R1=1;
+ call MOD_2;
+ [PTBR+16]=R0;
+ [PTBR+17]="0110";
+ multipop(R0,R1,R2,R3,R4);
+ 
+ multipush(R0,R1,R2,R3,R4);
+ R1=1;
+ call MOD_2;
+ [PTBR+18]=R0;
+ [PTBR+19]="0110";
+
+ multipop(R0,R1,R2,R3,R4);
+
+
+ 
+ multipush(R0,R1,R2,R3,R4);
+ R1=5;
+
+ R2=[INODE_TABLE+i*16+8];
+
+ call MOD_2;
+ [PTBR+8]=R0;
+ [PTBR+9]="0100";
+
+ multipop(R0,R1,R2,R3,R4);
+
+
+
+ [PTBR+10]=-1;
+ [PTBR+11]="0000";
+ [PTBR+12]=-1;
+ [PTBR+13]="0000";
+ [PTBR+14]=-1;
+ [PTBR+15]="0000";
+ 
+ [DISK_MAP_TABLE+pid*10]=-1;
+ [DISK_MAP_TABLE+pid*10+1]=-1;
+ [DISK_MAP_TABLE+pid*10+2]=-1;
+ [DISK_MAP_TABLE+pid*10+3]=-1;
+ [DISK_MAP_TABLE+pid*10+4]=[INODE_TABLE+i*16+8];
+ [DISK_MAP_TABLE+pid*10+5]=[INODE_TABLE+i*16+9];
+ [DISK_MAP_TABLE+pid*10+6]=[INODE_TABLE+i*16+10];
+ [DISK_MAP_TABLE+pid*10+7]=[INODE_TABLE+i*16+11];
+ [DISK_MAP_TABLE+pid*10+8]=-1;
+ [DISK_MAP_TABLE+pid*10+9]=-1;
+
+
+ [[PTBR+16]*512]=[[PTBR+8]*512+1];
+ R6=[[PTBR+8]*512+1];
+ SP=8*512;
+ [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+
+ ireturn;
+

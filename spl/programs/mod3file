@@ -1,0 +1,102 @@
+alias fnum R1;
+alias file R2;
+
+if (fnum==3) then //open
+ R3=0;
+ while(R3<61) do //finding the inode index in R3
+  if (R3==60) then
+   R0=-1;
+   return;
+  endif;
+  if([INODE_TABLE+R3*16+1]==file && ([INODE_TABLE+R3*16]!=EXEC)) then
+   break;
+  else
+   R3=R3+1;
+  endif;
+ endwhile;
+ 
+ multipush(R0,R1,R2,R3);
+ R1=4;
+ R2=R3;
+ R3=[SYSTEM_STATUS_TABLE+1];
+ call MOD_0
+ if (R0==-1) then
+  return;
+ endif;
+ multipop(R0,R1,R2,R3); 
+ 
+ if([INODE_TABLE+R3*16+1]!=file || ([INODE_TABLE+R3*16]==EXEC))
+    multipush(R0,R1,R2,R3,R4);
+    R1=5;
+    R2=R3;
+    R3=[SYSTEM_STATUS_TABLE+1];
+    call MOD_0
+    multipop(R0,R1,R2,R3,R4); 
+    R0=-2; 
+    return;  
+  endif;
+ 
+ R4=0;
+ while(R4<33) do //finding the open file table index
+  if(R4==32) then
+    multipush(R0,R1,R2,R3,R4);
+    R1=5;
+    R2=R3;
+    R3=[SYSTEM_STATUS_TABLE+1];
+    call MOD_0
+    multipop(R0,R1,R2,R3,R4); 
+    R0=-2; 
+    return;  
+  endif;
+  if([OPEN_FILE_TABLE+R4*4]==-1) then
+   break;
+  else
+   R4=R4+1;
+  endif;
+ endwhile;
+ 
+ if(file=="root") then
+  [OPEN_FILE_TABLE+R4*4]=INODE_ROOT;
+ else
+  if([FILE_STATUS_TABLE+R3*4+1]==-1) then
+   [FILE_STATUS_TABLE+R3*4+1]=1;
+  else
+   [FILE_STATUS_TABLE+R3*4+1]=[FILE_STATUS_TABLE+R3*4+1]+1;
+  endif;
+  [OPEN_FILE_TABLE+R4*4]=R3;
+ endif;
+ [OPEN_FILE_TABLE+R4*4+1]=1;
+ [OPEN_FILE_TABLE+R4*4+2]=0;
+ 
+ multipush(R0,R1,R2,R3,R4);
+ R1=5;
+ R2=R3;
+ R3=[SYSTEM_STATUS_TABLE+1];
+ call MOD_0
+ multipop(R0,R1,R2,R3,R4);
+ 
+ R0=R4;
+ return;
+endif;
+
+
+if (fnum==4) then //close
+ [OPEN_FILE_TABLE+file*4+1]=[OPEN_FILE_TABLE+R4*4+1]-1;
+ R3=[OPEN_FILE_TABLE+R4*4];
+ 
+ if([OPEN_FILE_TABLE+R4*4+1]==0) then
+  [OPEN_FILE_TABLE+R4*4]=-1
+  [OPEN_FILE_TABLE+R4*4+1]=-1;
+  if(R3!=0) then
+   [FILE_STATUS_TABLE+R3*4+1]=[FILE_STATUS_TABLE+R3*4+1]-1;
+  endif;
+  if([FILE_STATUS_TABLE+R3*4+1]==0) then
+   [FILE_STATUS_TABLE+R3*4+1]=-1;
+  endif;
+ endif;
+ 
+ return;
+endif;
+  
+  
+

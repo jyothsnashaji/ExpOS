@@ -1,0 +1,41 @@
+alias callno R0;
+callno=[[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+
+alias usersp R1;
+usersp=SP;
+
+alias arg R2;
+arg=[[PTBR+2*(SP-4)/512]*512+(SP-4)%512];
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13]=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512-1;
+
+if(callno==19) then //semlock
+ [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=19;
+ if(arg<0 || arg>7 || [[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512+512-16+arg]!=1) then
+ [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=-1;
+ else
+  while([SEMAPHORE_TABLE+4*arg]!=[SYSTEM_STATUS_TABLE+1]) do
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_SEMAPHORE;
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+5]=arg;
+ multipush(R0,R1,R2);
+ call MOD_5;
+ multipop(R0,R1,R2);
+ endwhile;
+ [SEMAPHORE_TABLE+4*arg]=[SYSTEM_STATUS_TABLE+1];
+ 
+
+ endif;
+endif;
+
+
+if(callno==20) then //semunlock
+ [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=20;
+
+
+
+endif;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13];
+ireturn;

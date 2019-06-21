@@ -1,0 +1,38 @@
+alias usersp R0;
+usersp=SP;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13]=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512-1;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=21;
+
+if([SYSTEM_STATUS_TABLE+1]!=1 || [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+3]!=1) then
+   [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=0;
+   [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+   SP=usersp;
+   ireturn;
+endif;
+
+//inode table
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=59; //pgno
+R4=3; //bno
+call MOD_4;
+
+//root file
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=62;
+R4=5;
+call MOD_4;
+
+//disk free list
+R1=1;
+R2=[SYSTEM_STATUS_TABLE+1];
+R3=61;
+R4=2;
+call MOD_4;
+
+halt;
+

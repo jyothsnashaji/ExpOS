@@ -1,0 +1,9 @@
+int main()
+ {decl
+  int i,k;
+  enddecl
+begin 
+k=i/0;
+return 0;
+end
+}

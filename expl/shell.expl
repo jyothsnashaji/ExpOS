@@ -1,0 +1,27 @@
+int main()
+{decl
+ int ret,temp;
+ string name;
+ enddecl
+ begin
+ 
+ temp =exposcall("Read",-1,name);
+
+  while(name!="shutdown") do
+   ret = exposcall("Fork");
+  if(ret==0) then
+   temp=exposcall("Exec",name);
+   if (temp==-1) then
+    temp=exposcall("Write",-2,"Wrong");
+    temp = exposcall ("Exit");
+   endif;
+  else
+   temp=exposcall("Wait",ret);
+  endif;
+ temp= exposcall ("Read",-1,name);
+ temp= exposcall("Write",-1,name);
+ endwhile;
+temp=exposcall("Shutdown");
+return 0;
+end
+}

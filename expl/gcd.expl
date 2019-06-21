@@ -1,0 +1,26 @@
+int main()
+{decl
+ int i,j,k,n1,n2,g;
+ enddecl
+ begin
+ read(n1);
+ read(n2);
+ if(n2>n1) then
+  i=n2;
+  n2=n1;
+  n1=i;
+ endif;
+ g=1;
+ while(g<=n2) do
+  i=n1%g;
+  j=n2%g;
+  if(i==0 AND j==0) then
+    k=g;
+  endif;
+  g=g+1;
+  endwhile;
+  i=exposcall("Write",-2,k);
+  return 0;
+  end
+  }
+  

@@ -1,0 +1,61 @@
+alias callno R0;
+alias arg R1;
+alias usersp R2;
+
+callno = [[PTBR+2*(SP-5)/512]*512+(SP-5)%512];
+arg = [[PTBR+2*(SP-4)/512]*512+(SP-4)%512];
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13]=SP;
+usersp=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512-1;
+
+breakpoint;
+
+if (callno==11) then //getpid
+   [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=11;
+   [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=[SYSTEM_STATUS_TABLE+1];
+endif;
+
+if (callno==12) then //getppid
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=12;
+  [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+2];
+
+endif;
+
+if (callno==13) then //wait
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=13;
+
+
+  if(arg==[SYSTEM_STATUS_TABLE+1] || [PROCESS_TABLE+arg*16+4]==TERMINATED || arg<1 ||arg>15) then
+   [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=-1;
+   [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+   SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13];
+   ireturn;
+  endif;
+  
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_PROCESS;
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+5]=arg;
+  multipush(R0,R1,R2);
+  call MOD_5;
+  multipop(R0,R1,R2);
+  [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=0;
+  R3=[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512;
+ 
+ endif;
+ 
+ 
+if (callno==14) then //signal
+ [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=14;
+ R3=1;
+ while(R3<16) do
+ if([PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]==WAIT_PROCESS && [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+5]==[SYSTEM_STATUS_TABLE+1]) then
+  [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=READY;
+ endif;
+ R3=R3+1;
+ endwhile;
+ [[PTBR+2*(usersp-1)/512]*512+(usersp-1)%512]=0;
+endif;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=0;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13];
+ireturn;

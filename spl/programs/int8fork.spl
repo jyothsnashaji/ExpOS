@@ -1,0 +1,121 @@
+
+breakpoint;//1
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+9]=8;
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+13]=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+11]*512-1;
+
+
+
+R1=1;
+call MOD_1;
+
+alias child_pid R0;
+alias parent_pid R1;
+alias cpgt R2;
+cpgt=PAGE_TABLE_BASE+child_pid*20;
+parent_pid=[SYSTEM_STATUS_TABLE+1];
+
+//STACK
+multipush(R0,R1,R2);
+R1=1;
+call MOD_2;
+[cpgt+16]=R0;
+[cpgt+17]="0110";
+multipop(R0,R1,R2);
+
+multipush(R0,R1,R2);
+R1=1;
+call MOD_2;
+[cpgt+18]=R0;
+[cpgt+19]="0110";
+multipop(R0,R1,R2);
+
+//UAP
+multipush(R0,R1,R2);
+R1=1;
+call MOD_2;
+alias uapg R3;
+uapg=R0;
+multipop(R0,R1,R2);
+
+
+
+[PROCESS_TABLE+child_pid*16+11]=uapg;
+[PROCESS_TABLE+child_pid*16+3]=[PROCESS_TABLE+parent_pid*16+3];//userid
+[PROCESS_TABLE+child_pid*16+6]=[PROCESS_TABLE+parent_pid*16+6];//swapflag
+[PROCESS_TABLE+child_pid*16+10]=[PROCESS_TABLE+parent_pid*16+10];//uas status
+[PROCESS_TABLE+child_pid*16+7]=[PROCESS_TABLE+parent_pid*16+7];//inodeindex
+[PROCESS_TABLE+child_pid*16+13]=[PROCESS_TABLE+parent_pid*16+13];//uptr
+[PROCESS_TABLE+child_pid*16+2]=parent_pid;
+[PROCESS_TABLE+child_pid*16+9]=0;//mode
+[PROCESS_TABLE+child_pid*16]=0;//tick
+[PROCESS_TABLE+child_pid*16+12]=0;//kptr
+[PROCESS_TABLE+child_pid*16+4]=CREATED;
+
+
+alias i R4;
+alias ppgt R5;
+ppgt=PAGE_TABLE_BASE+parent_pid*20;
+
+i=0;
+while(i<8) do
+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i] = [[PROCESS_TABLE+parent_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i];
+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1] = [[PROCESS_TABLE+parent_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1];
+
+if([[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i] ==1) then
+ [SEMAPHORE_TABLE+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1]*4+1]=[SEMAPHORE_TABLE+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1]*4+1]+1;
+endif;
+
+if([[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i] ==FILE) then
+ [OPEN_FILE_TABLE+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1]*4+1]=[OPEN_FILE_TABLE+[[PROCESS_TABLE+child_pid*16+11]*512+RESOURCE_TABLE_OFFSET+i+1]*4+1]+1;
+endif;
+
+i=i+1;
+endwhile;
+
+
+
+
+i=0;
+while (i<10) do
+ [DISK_MAP_TABLE+child_pid*10+i]=[DISK_MAP_TABLE+parent_pid*10+i];
+i=i+1;
+endwhile;
+
+i=0;
+while(i<16) do
+ [cpgt+i]=[ppgt+i];
+ [cpgt+i+1]=[ppgt+i+1];
+ [MEMORY_FREE_LIST +[cpgt+i]]=[MEMORY_FREE_LIST+[cpgt+i]]+1;
+ i=i+2;
+endwhile;
+
+i=0;
+while(i<512) do
+[[cpgt+16]*512+i] = [[ppgt+16]*512+i];
+[[cpgt+18]*512+i] = [[ppgt+18]*512+i];
+i=i+1;
+endwhile;
+
+[cpgt+17]=[ppgt+17];
+[cpgt+19]=[ppgt+19];
+
+[[PROCESS_TABLE+child_pid*16+11]*512]=BP;
+
+alias childsp R6;
+alias parentsp R7;
+
+
+
+childsp=[PROCESS_TABLE+child_pid*16+13];
+parentsp=[PROCESS_TABLE+parent_pid*16+13];
+
+[[cpgt+2*(childsp-1)/512]*512+(childsp-1)%512]=0;
+[[ppgt+2*(parentsp-1)/512]*512+(parentsp-1)%512]=child_pid;
+
+[PROCESS_TABLE+parent_pid*16+9]=0;
+SP=parentsp;
+
+breakpoint;//2
+ireturn;
+

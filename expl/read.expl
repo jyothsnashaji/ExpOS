@@ -1,0 +1,12 @@
+int main()
+{decl
+ int i,n1;
+ enddecl
+ begin
+  i=exposcall("Read",-1,n1);
+ 
+  i=exposcall("Write",-2,n1);
+  return 0;
+  end
+  }
+  

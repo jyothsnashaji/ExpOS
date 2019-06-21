@@ -1,0 +1,153 @@
+alias fnum R1;
+alias current_pid R2;
+alias arg2 R3;
+
+if(fnum==1) then //acquire buffer
+ breakpoint;
+ while([BUFFER_TABLE+R2*4+2]!=-1) do
+  [PROCESS_TABLE+R3*16+4]=WAIT_BUFFER;
+  [PROCESS_TABLE+R3*16+5]=R2;
+  multipush(R1,R2,R3);
+  call MOD_5;
+  multipop(R1,R2,R3);
+ endwhile;
+ [BUFFER_TABLE+R2*4+2]=R3;
+ return;
+endif;
+
+if(fnum==2) then //release buffer
+ breakpoint;
+ if([BUFFER_TABLE+R2*4+2]!=R3) then
+  R0=-1;
+  return;
+ endif;
+ [BUFFER_TABLE+R2*4+2]=-1;
+ R4=1;
+ while(R4<16) do
+  if([PROCESS_TABLE+R4*16+4]==WAIT_BUFFER && [PROCESS_TABLE+R4*16+5]==R2) then
+   [PROCESS_TABLE+R4*16+4]=READY;
+  endif;
+ R4=R4+1;
+ endwhile;
+ R0=0;
+ return;
+endif;
+
+
+
+
+if (fnum==3) then //acquire disk
+ while ([DISK_STATUS_TABLE]==1) do
+  [PROCESS_TABLE+current_pid*16+4]=WAIT_DISK;
+  multipush(R1,R2);
+  call MOD_5;
+  multipop(R1,R2);
+ endwhile;
+
+ [DISK_STATUS_TABLE]=1;
+ [DISK_STATUS_TABLE+4]=current_pid;
+ return;
+ endif;
+
+if (fnum==4) then //acquire inode
+ while([FILE_STATUS_TABLE+R2*4]!=-1) do
+   [PROCESS_TABLE+R3*16+4]=WAIT_FILE;
+   [PROCESS_TABLE+R3*16+5]=R2;
+   multipush(R0,R1,R2,R3);
+   call MOD_5;
+   multipop(R0,R1,R2,R3);
+ endwhile;
+ if([INODE_TABLE+R2*16+1]==-1) then
+   R0=-1;
+   return;
+ endif;
+ [FILE_STATUS_TABLE+R2*4]=R3;
+ return;
+endif;
+
+if (fnum==5) then //release inode
+  if([FILE_STATUS_TABLE+R2*4]!=R3) then 
+    R0=-1;
+    return;
+  endif;
+  [FILE_STATUS_TABLE+R2*4]=-1;
+  R4=1;
+  while(R4<16) do
+   if([PROCESS_TABLE+R4*16+4]==WAIT_FILE &&[PROCESS_TABLE+R4*16+5]==R2) then
+    [PROCESS_TABLE+R4*16+4]=READY;
+   endif;
+   R4=R4+1;
+  endwhile;
+ R0=0;
+ return;
+ endif;
+
+
+if (fnum==6) then //acquire semaphore
+ R3=0;
+ while(R3<32) do
+  if([SEMAPHORE_TABLE+4*R3+1]==0) then
+   [SEMAPHORE_TABLE+4*R3+1]=1;
+   [SEMAPHORE_TABLE+4*R3]=-1;
+   R0=R3;
+   return;
+  endif;
+  R3=R3+1;
+ endwhile;
+ R0=-1;
+ return;
+endif;
+  
+if (fnum==7) then //release semaphore 
+ alias index R5;
+ index=[[PROCESS_TABLE+R3*16+11]*512+512-16+2*R2+1];
+ if([SEMAPHORE_TABLE+4*index]==R3) then
+    [SEMAPHORE_TABLE+4*index]=-1;
+    R4=0;
+    while(R4<16) do
+     if([PROCESS_TABLE+R4*16+4]==WAIT_SEMAPHORE && [PROCESS_TABLE+16*R4+5]==R2) then
+      [PROCESS_TABLE+R4*16+4]=READY;
+     endif;
+     R4=R4+1;
+    endwhile;
+  endif;
+   [SEMAPHORE_TABLE+4*index+1]=[SEMAPHORE_TABLE+4*index+1]-1;
+ endif;
+
+
+if(fnum==8) then // acquire terminal
+ while([TERMINAL_STATUS_TABLE]==1)
+ do 
+  [PROCESS_TABLE+current_pid*16+4]=WAIT_TERMINAL;
+  multipush(R1,R2);
+
+  call MOD_5;
+  multipop(R1,R2);
+ endwhile;
+ [TERMINAL_STATUS_TABLE]=1;
+ [TERMINAL_STATUS_TABLE+1]=current_pid;
+ return;
+ endif;
+ 
+if(fnum==9) then//release terminal
+ if([TERMINAL_STATUS_TABLE+1]!=current_pid) then
+   R0=-1;
+   return;
+ else
+   [TERMINAL_STATUS_TABLE]=0;
+   alias i R3;
+   i=0;
+   while(i<=15)
+    do
+      if([PROCESS_TABLE+i*16+4]==WAIT_TERMINAL)
+       then [PROCESS_TABLE+i*16+4]=READY;
+      endif;
+     i=i+1;
+    endwhile;
+    R0=0;
+   
+    return;
+  endif;
+ endif;
+ return;
+   

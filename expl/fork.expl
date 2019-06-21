@@ -1,0 +1,15 @@
+int main()
+{decl 
+ int ret,temp;
+ enddecl
+ begin
+ ret=exposcall("Fork");
+ if(ret==0)
+ then 
+   temp=exposcall("Exec","evennum.xsm");
+  else
+   temp=exposcall("Exec","oddnum.xsm");
+ endif;
+ return 0;
+ end
+ }

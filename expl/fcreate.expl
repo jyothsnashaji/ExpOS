@@ -1,0 +1,14 @@
+int main()
+{decl
+ int temp,file,p;
+ enddecl
+ 
+ begin
+ temp=exposcall("Read",-1,file);
+ temp=exposcall("Read",-1,p);
+ temp=exposcall("Create",file,p);
+ p=exposcall("Write",-2,temp);
+ p=exposcall("Shutdown");
+ return 0;
+ end
+}

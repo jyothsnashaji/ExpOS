@@ -1,0 +1,97 @@
+alias fnum R1;
+alias arg R2;
+if (fnum == 1)//get free page
+ then
+   if ([PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]!=WAIT_TERMINAL) then
+    [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]+1;
+   endif;
+   while([SYSTEM_STATUS_TABLE+2]==0) do
+     [PROCESS_TABLE+[SYSTEM_STATUS_TABLE+1]*16+4]=WAIT_MEM;
+     multipush(R0,R1,R2);
+     call MOD_5;
+     multipop(R0,R1,R2);
+   endwhile;
+   [SYSTEM_STATUS_TABLE+3]=[SYSTEM_STATUS_TABLE+3]-1; //waitmemcount
+   [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]-1; //memfreecount
+   alias ret R0;
+   ret=83;
+   while(ret<128)
+  do 
+   if([MEMORY_FREE_LIST+ret]==0)
+   then  break;
+   else
+
+    ret=ret+1;
+   
+   endif;
+   endwhile;
+   [MEMORY_FREE_LIST+ret]=1;
+  
+   return;
+ endif;
+
+if(fnum==2) //release page
+ then
+   [MEMORY_FREE_LIST+arg]=[MEMORY_FREE_LIST+arg]-1;
+   if([MEMORY_FREE_LIST+arg]==0) then
+    [SYSTEM_STATUS_TABLE+2]=[SYSTEM_STATUS_TABLE+2]+1;
+   endif;
+  alias i R3;
+  i=0;
+  while(i<15) do
+   if([PROCESS_TABLE+i*16+4]==WAIT_MEM) then
+     [PROCESS_TABLE+i*16+4]=READY;
+   endif;
+  i=i+1;
+ endwhile;
+  return;
+ endif;
+
+
+if(fnum==4)//release block
+then
+ [DISK_FREE_LIST+arg]=0;
+return;
+endif;
+
+
+if (fnum==5) then //get code page
+ alias i R3;
+ i=0;
+ while(i<15) do
+  alias j R4;
+  j=2;
+  while (j<10) do
+  if ([DISK_MAP_TABLE+i*10+j]==arg && [PAGE_TABLE_BASE+i*20+2*j]!=-1) then 
+        R0=[PAGE_TABLE_BASE+i*20+2*j];
+        breakpoint;
+        [MEMORY_FREE_LIST+R0]=[MEMORY_FREE_LIST+R0]+1;
+        return;
+   endif;
+   j=j+1;
+   endwhile;
+   i=i+1;
+   endwhile;
+
+ if(i==15) then
+   multipush(R1,R2);
+   R1=1;
+   call MOD_2;
+   multipop(R1,R2);
+ endif;
+
+   multipush(R0,R1,R2);
+   R1=2;
+   
+   R3=R0;
+   R4=arg;
+   R2=[SYSTEM_STATUS_TABLE+1];
+   call MOD_4;
+   multipop(R0,R1,R2);
+   
+   return;
+  
+  endif;
+
+   
+   return;

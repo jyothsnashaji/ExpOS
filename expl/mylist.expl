@@ -1,0 +1,54 @@
+type
+Node
+{int data;
+ Node next;
+}
+endtype
+
+decl
+Node head;
+enddecl
+
+int main()
+{decl
+  
+  int n,t,temp;
+  Node l,p;
+ enddecl
+begin
+
+
+ t=initialize();
+ temp=exposcall("Read",-1,n);
+
+ head=null;
+ breakpoint;
+ while(n!=0) do
+   temp=exposcall("Read",-1,t);
+   p=alloc();
+   breakpoint;
+   p.data=t;
+   p.next=null;
+   if (head==null) then
+    head=p;
+   else
+    l=head;
+     while(l.next!=null) do
+      l=l.next;
+     endwhile;
+    l.next=p;
+   endif;
+   n=n-1;
+ endwhile;
+
+   l=head;
+  while(l!=null) do
+   temp=exposcall("Write",-2,l.data);
+   l=l.next;
+  endwhile;
+ 
+
+ 
+ return 0;
+ end
+}
